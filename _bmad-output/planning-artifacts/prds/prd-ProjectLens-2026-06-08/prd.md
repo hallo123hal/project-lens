@@ -13,11 +13,11 @@ This PRD defines the MVP requirements for ProjectLens, a Marketplace-ready Jira 
 
 ## 1. Vision
 
-ProjectLens is a lightweight portfolio risk radar for Jira Cloud. It gives PMOs, Engineering Managers, Delivery Managers, Project Managers, Scrum Masters, and Tech Leads a single place to see which Jira projects are currently at risk, why they are at risk, and how likely active sprints are to complete.
+ProjectLens is Cross-project Portfolio Risk Intelligence for Jira. It gives PMOs, Engineering Managers, Delivery Managers, Project Managers, Scrum Masters, and Tech Leads a single place to see which Jira projects are currently at risk, why they are at risk, and how likely active sprints are to complete.
 
 The product thesis is that many teams do not need a full portfolio management suite to answer the weekly operational question: "Which projects need attention right now?" Existing Jira portfolio tools commonly emphasize roadmaps, hierarchy, Gantt planning, capacity, and enterprise planning workflows. ProjectLens focuses narrowly on near-term delivery risk detection across selected Jira projects.
 
-ProjectLens must be built as a real Atlassian Marketplace app from the beginning. It must work across varied Jira Cloud sites, permissions, project types, boards, workflows, custom fields, and incomplete data. Marketplace-readiness is a product requirement, not only an engineering preference.
+ProjectLens must be built as a real Atlassian Marketplace app from the beginning. It must work across varied Jira Cloud sites, permissions, project types, boards, workflows, custom fields, and incomplete data. Marketplace-readiness is a product requirement, not only an engineering preference. Automatically identifying delivery risks across Jira projects and helping engineering leaders focus on the projects that need attention most is the core value proposition.
 
 ## 2. Target User
 
@@ -64,9 +64,13 @@ ProjectLens must be built as a real Atlassian Marketplace app from the beginning
 ## 3. Glossary
 
 - **ProjectLens** - The Jira Cloud app defined by this PRD.
+- **Jira Administrator** - A Jira user with administrative permission to modify site-wide ProjectLens settings.
+- **Regular User** - A Jira user who can view allowed ProjectLens dashboards and details but cannot modify site-wide ProjectLens settings.
 - **Portfolio Risk Dashboard** - The cross-project view showing selected projects, risk scores, risk levels, completion probability, and top risk reasons.
 - **Project Risk Detail** - The project-level view showing risk breakdown and supporting evidence for one project.
 - **Settings View** - The configuration surface for selected projects, board mapping, fields, thresholds, issue type filters, and fallback behavior.
+- **Site-wide Settings** - Administrative ProjectLens configuration that affects risk calculations for the Jira site.
+- **User Preferences** - User-specific dashboard display preferences that never affect calculations for other users.
 - **Risk Score** - A normalized 0 to 100 project-level score calculated from risk signals.
 - **Risk Level** - The Low, Medium, or High category derived from Risk Score.
 - **Risk Signal** - A measurable condition that contributes to Risk Score, such as blocked issues, velocity drop, scope creep, or unassigned sprint work.
@@ -100,6 +104,8 @@ Users can filter the Portfolio Risk Dashboard by project and Risk Level, and sor
 **Consequences:**
 - Users can isolate High Risk projects in one interaction.
 - Sort and filter behavior works with partial and fallback rows.
+- Filter, sort, favorite project, and UI display choices are stored as User Preferences where persistence is supported.
+- User Preferences must not affect Site-wide Settings or risk calculations for other users.
 
 #### FR-3: Manually refresh analysis
 
@@ -140,6 +146,8 @@ Users can see blocked issue counts and relevant blocked-work evidence for the pr
 - MVP detects blocked issues using configurable blocked status names.
 - Blocked issues older than the configured threshold contribute to Risk Score.
 - The view avoids exposing issue details the current user is not permitted to access.
+- Project Risk Detail may show issue keys and issue summaries only when the current user already has Jira permission to view those issues.
+- Portfolio Risk Dashboard stays analytics-first and shows aggregate metrics, counts, Risk Signals, and risk reasons rather than detailed issue lists.
 
 #### FR-7: Show velocity comparison
 
@@ -221,6 +229,8 @@ ProjectLens calculates Completion Probability using Monte Carlo simulation again
 
 **Consequences:**
 - MVP default simulation count is 1,000.
+- MVP uses the last six completed sprints by default.
+- If fewer than six completed sprints are available, ProjectLens uses all available completed sprints.
 - The output is displayed as a percentage.
 - If fewer than three historical completed sprints are available, ProjectLens shows Low Confidence.
 
@@ -241,15 +251,16 @@ ProjectLens can use issue count as a fallback when story points are unavailable 
 
 #### FR-16: Configure selected projects
 
-Users can select which Jira projects are included in portfolio analysis.
+Jira Administrators can select which Jira projects are included in portfolio analysis.
 
 **Consequences:**
-- Only projects visible to the current user are selectable.
+- Only projects visible to the Jira Administrator are selectable.
 - Empty selection produces an onboarding or empty state.
+- Regular Users can view allowed dashboard data but cannot modify Selected Projects.
 
 #### FR-17: Configure board mapping
 
-Users can configure which board should be used for each Selected Project when board mapping is ambiguous.
+Jira Administrators can configure which board should be used for each Selected Project when Board Mapping is ambiguous.
 
 **Consequences:**
 - If no board is found, ProjectLens shows Board not found or Board configuration required.
@@ -257,7 +268,7 @@ Users can configure which board should be used for each Selected Project when bo
 
 #### FR-18: Configure story point field
 
-Users can configure the story point field ProjectLens should use.
+Jira Administrators can configure the story point field ProjectLens should use.
 
 **Consequences:**
 - ProjectLens does not assume a fixed custom field ID.
@@ -265,7 +276,7 @@ Users can configure the story point field ProjectLens should use.
 
 #### FR-19: Configure blocked statuses
 
-Users can configure status names that indicate blocked work.
+Jira Administrators can configure status names that indicate blocked work.
 
 **Consequences:**
 - MVP supports configurable status-name detection.
@@ -273,11 +284,13 @@ Users can configure status names that indicate blocked work.
 
 #### FR-20: Configure risk thresholds and fallback behavior
 
-Users can configure blocked issue age threshold, velocity drop threshold, scope creep threshold, simulation count, issue-count fallback behavior, issue type filters, and whether projects without active sprint data should appear.
+Jira Administrators can configure blocked issue age threshold, velocity drop threshold, scope creep threshold, simulation count, issue-count fallback behavior, issue type filters, and whether projects without active sprint data should appear.
 
 **Consequences:**
 - Defaults are available before customization.
 - Saved settings are reused on future dashboard loads.
+- Risk thresholds are Site-wide Settings in MVP.
+- MVP does not support per-project threshold overrides.
 
 ### 4.6 Marketplace-Ready Data Handling
 
@@ -291,6 +304,7 @@ ProjectLens only shows projects, issues, boards, and sprint data the current Jir
 
 **Consequences:**
 - Insufficient permissions show a clear Fallback State.
+- If a project is visible but sprint or board information is unavailable, ProjectLens shows partial analysis, displays a warning indicator, continues calculating available metrics, and does not fail the entire dashboard.
 - ProjectLens does not infer or expose restricted project data through aggregate views.
 
 #### FR-22: Handle missing and inconsistent Jira data
@@ -300,6 +314,8 @@ ProjectLens handles no active sprint, no completed sprints, no story point field
 **Consequences:**
 - No missing-data condition crashes the dashboard or detail view.
 - Each unsupported or incomplete condition produces a user-visible warning or Fallback State.
+- MVP primarily targets Scrum projects.
+- Kanban projects are supported through graceful degradation: sprint-specific metrics are unavailable, Completion Probability is hidden, Risk Score uses available project metrics, and the UI clearly indicates unavailable metrics.
 
 #### FR-23: Analyze multiple projects resiliently
 
@@ -319,7 +335,8 @@ ProjectLens analyzes multiple Selected Projects without allowing one failed proj
 - **NFR-6: Resilience.** Missing, partial, or inaccessible data must produce Fallback States rather than crashes.
 - **NFR-7: Performance.** ProjectLens must support pagination, avoid unnecessary Jira API calls, cache derived results where appropriate, and provide manual refresh.
 - **NFR-8: Testability.** Risk scoring, threshold logic, fallback logic, settings merge behavior, and simulation logic must be unit-testable.
-- **NFR-9: Accessibility.** Risk status must not rely on color alone; labels and text states must accompany color indicators.
+- **NFR-9: Accessibility.** Risk status must not rely on color alone; each Risk Level indicator must include color, text label, and an icon or badge. ProjectLens should meet WCAG accessibility expectations where practical.
+- **NFR-10: Performance targets.** Portfolio Risk Dashboard target load time is under 3 seconds for 10 Selected Projects, under 5 seconds for 20 Selected Projects, and under 10 seconds for 50 Selected Projects. Partial results are preferred over complete failure.
 
 ## 6. Constraints and Guardrails
 
@@ -328,17 +345,21 @@ ProjectLens analyzes multiple Selected Projects without allowing one failed proj
 - ProjectLens must stay focused on operational delivery risk, not broad portfolio planning.
 - MVP must use one Jira app entry point and route subviews internally.
 - The app must be useful with partial data and explicit about confidence.
+- Every feature must be evaluated against this rule: ProjectLens is a multi-tenant Marketplace product, not an internal Jira customization.
+- No implementation may assume specific project keys, board IDs, workflows, custom fields, user roles, or sprint configurations.
 
 ### 6.2 Security and Privacy Guardrails
 
 - Do not expose tokens, secrets, or internal implementation details in frontend code.
 - Do not log personal or sensitive Jira issue content.
 - Do not store issue descriptions, comments, attachments, or unnecessary personal data in MVP.
+- Do not bypass Jira permissions when showing issue keys, issue summaries, analytics, boards, sprints, or project data.
 
 ### 6.3 Competitive Positioning Guardrails
 
 - ProjectLens should not compete head-on with heavyweight PPM suites on Gantt planning, resource planning, enterprise roadmap hierarchy, or financial portfolio management.
 - ProjectLens should differentiate through fast setup, narrow risk radar focus, clear fallback states, and Marketplace-safe Jira variability handling.
+- Marketplace positioning phrase: "Cross-project Portfolio Risk Intelligence for Jira."
 
 ## 7. MVP Scope
 
@@ -348,12 +369,14 @@ ProjectLens analyzes multiple Selected Projects without allowing one failed proj
 - Portfolio Risk Dashboard.
 - Project Risk Detail.
 - Settings View for project selection and core configuration.
+- Site-wide administrative settings and non-calculation User Preferences.
 - Risk Signals for blocked issues, velocity drop, sprint scope creep, and unassigned active-sprint issues.
 - Risk Score and Risk Level calculation.
 - Monte Carlo Completion Probability.
 - Basic deterministic recommended action summary.
 - Forge storage for settings and cached derived analysis results.
 - Permission-aware and missing-data-aware fallback states.
+- Graceful degradation for Kanban projects.
 
 ### 7.2 Out of Scope for MVP
 
@@ -379,8 +402,9 @@ ProjectLens analyzes multiple Selected Projects without allowing one failed proj
 
 **Secondary**
 
-- **SM-4: Configuration clarity.** Users can identify and resolve missing Board Mapping, story point field, blocked status, and fallback settings from the Settings View. Validates FR-16 through FR-20.
+- **SM-4: Configuration clarity.** Jira Administrators can identify and resolve missing Board Mapping, story point field, blocked status, and fallback settings from the Settings View. Validates FR-16 through FR-20.
 - **SM-5: Confidence clarity.** Low-confidence and fallback results are visibly labeled wherever they appear. Validates FR-7, FR-14, FR-15, FR-22.
+- **SM-6: Performance envelope.** Portfolio Risk Dashboard meets target load times for 10, 20, and 50 Selected Projects while preserving partial results when individual analyses fail. Validates FR-1, FR-3, FR-23, NFR-10.
 
 **Counter-metrics**
 
@@ -395,20 +419,23 @@ ProjectLens analyzes multiple Selected Projects without allowing one failed proj
 - **Risk: Risk Score appears more authoritative than the evidence supports.** Mitigation: show Risk Signal breakdown, Confidence, warnings, and top risk reasons.
 - **Risk: MVP drifts into heavyweight portfolio management.** Mitigation: preserve the v1 non-goals and defer roadmap, resource, financial, and dependency planning.
 
-## 10. Open Questions
+## 10. Resolved MVP Decisions
 
-1. Who can save global ProjectLens settings: any user, Jira admin only, or a configurable role? [NOTE FOR PM]
-2. Should settings be site-wide, user-specific, or both?
-3. What exact Jira permission behavior should apply when a user can see a project but not its board or sprint data?
-4. Should blocked issue evidence show issue keys and summaries, issue keys only, or derived counts only for privacy-first MVP?
-5. Should the first Marketplace MVP support Kanban projects, or only show a configured no-sprint fallback for non-Scrum projects?
-6. What level of historical sprint lookback should be used by default for velocity and simulation?
-7. Should risk thresholds be global for the site or overrideable per project?
-8. What is the minimum acceptable dashboard performance target for 10, 20, and 50 Selected Projects?
-9. Which visual language should be used for risk colors and accessibility labels?
-10. What Marketplace listing promise should ProjectLens make: "risk radar," "portfolio health," "delivery intelligence," or another positioning phrase?
+1. ProjectLens settings are site-wide administrative settings. Only Jira Administrators may modify global ProjectLens configuration.
+2. Regular Users may view allowed risk dashboards and Project Risk Detail but cannot modify Site-wide Settings.
+3. ProjectLens supports two settings scopes: Site-wide Settings for calculation-affecting configuration and User Preferences for dashboard display preferences.
+4. User Preferences must never affect calculations for other users.
+5. If a project is visible but sprint or board information is unavailable, ProjectLens shows partial analysis, displays a warning, calculates available metrics, and never fails the entire dashboard.
+6. Portfolio Risk Dashboard is analytics-first and shows aggregated metrics, counts, Risk Signals, and risk reasons.
+7. Project Risk Detail may show issue keys and summaries when the user already has Jira permission to view those issues.
+8. MVP primarily targets Scrum projects.
+9. Kanban projects are supported through graceful degradation: sprint-specific metrics unavailable, Completion Probability hidden, Risk Score based on available project metrics, and unavailable metrics clearly indicated.
+10. Default historical lookback is the last six completed sprints. If fewer than six exist, use all available completed sprints. If fewer than three exist, mark Confidence as Low.
+11. Risk thresholds are site-wide by default. MVP does not implement per-project threshold customization.
+12. Performance targets are under 3 seconds for 10 Selected Projects, under 5 seconds for 20 Selected Projects, and under 10 seconds for 50 Selected Projects.
+13. Risk indicators must include color, text label, and icon or badge, and must not rely on color alone.
+14. Marketplace positioning is "Cross-project Portfolio Risk Intelligence for Jira."
 
 ## 11. Assumptions Index
 
 - Section 4.2, FR-9: [ASSUMPTION: priority-weighted unassigned risk is included after the basic MVP count is working.]
-
