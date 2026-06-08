@@ -1,0 +1,5 @@
+"ProjectLens" — Cross-project Portfolio Risk Intelligence
+
+Market pain point: PMO and Engineering Managers manage 10–20 projects in Jira but have no easy way to get a holistic view of cross-project risks. They have to open each board individually and manually consolidate everything in Excel. Existing apps such as BigPicture and Structure are too heavy and expensive, at around $5–10 per user per month.
+
+Product vision: A lightweight portfolio risk radar that automatically detects risks, such as issues blocked for more than 3 days, velocity dropping by more than 20%, sprint scope creep exceeding 15%, and unassigned issues in active sprints. It calculates a Risk Score for each project, displays a cross-project heatmap, and predicts sprint completion probability using Monte Carlo simulation based on historical velocity.
