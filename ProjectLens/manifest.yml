@@ -1,0 +1,19 @@
+modules:
+  jira:globalPage:
+    - key: projectlens-hello-world-page
+      resource: main
+      resolver:
+        function: resolver
+      title: ProjectLens
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: static/hello-world/build
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/54ec593b-48a0-4a70-894c-846341527d6f
