@@ -13,6 +13,19 @@
 
 **Scope:** Một Forge app duy nhất (`jira:globalPage`), hỗ trợ tất cả Jira Cloud site, không giới hạn số project, Marketplace-ready từ ngày đầu.
 
+### Differentiation vs. Native Jira Dashboards
+
+| Capability | Native Jira Dashboard | ProjectLens |
+|---|---|---|
+| Cross-project risk aggregate | Manual, per-gadget setup | Automatic, configured once |
+| Risk Score calculation | Not available | Weighted formula across 4 signals |
+| Velocity drop detection | Manual chart inspection | Automated sub-risk signal |
+| Scope creep detection | Not available natively | Calculated from sprint start vs current |
+| Monte Carlo completion probability | Not available | 1,000-iteration simulation |
+| Blocked work risk signal | Not available | Configurable age threshold detection |
+| Fallback states for missing data | No — broken gadgets | First-class, labeled states |
+| Multi-site, marketplace-safe | Not applicable | Built-in from day one |
+
 ---
 
 ## Bối cảnh & Yêu cầu
@@ -316,12 +329,17 @@ jobs:
 - [ ] Test pilot trên 1 Jira site thực tế
 - **Go/No-Go:** FR-1 → FR-23 pass, SM-1 → SM-3 đạt, performance targets met
 
-### Phase 2 – Multi-site Rollout & Configuration Layer (Tuần 7–10)
+### Phase 2 – Multi-site Rollout, Configuration Layer & Gadgets (Tuần 7–10)
 - [ ] Verify site isolation hoàn chỉnh (test với 2–3 Jira sites khác nhau)
 - [ ] Hardening permission edge cases và partial analysis scenarios
 - [ ] Settings onboarding UX polish
 - [ ] CI/CD pipeline (GitHub Actions) với staging environment
 - [ ] Marketplace listing draft (app description, screenshots, privacy policy)
+- [ ] **Dashboard Gadgets:** Add `jira:dashboardGadget` modules to `manifest.yml` for embeddable, read-only widgets:
+  - **Portfolio Risk Summary gadget** — shows count of HIGH / MEDIUM / LOW risk projects across configured portfolio
+  - **Top At-Risk Projects gadget** — shows top 3–5 projects by Risk Score with drill-down link to global page
+  - Gadgets are read-only; all data flows through existing `getDashboardData` resolver (no new API paths)
+  - Each gadget requires its own manifest entry and Custom UI resource — budget additional frontend build complexity
 - **Go/No-Go:** SM-4 → SM-6 đạt, zero cross-site data leak, Forge lint clean
 
 ### Phase 3 – Optimization, Observability & Advanced Features (Tuần 11–14)

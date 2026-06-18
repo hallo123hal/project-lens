@@ -36,7 +36,17 @@ ProjectLens must be built as a real Atlassian Marketplace app from the beginning
 - Organizations needing cross-instance portfolio analytics in MVP.
 - Users without Jira project access to the data they expect to view.
 
-### 2.3 Key User Journeys
+### 2.3 Stakeholder Access Matrix
+
+| Role | Dashboard View | Project Detail | Settings | Issue Keys / Summaries |
+|---|---|---|---|---|
+| Jira Admin | Full | Full (own Jira permission) | Read + Write | Per Jira permission |
+| Regular User (e.g., PM, EM) | Full | Full (own Jira permission) | Read-only | Per Jira permission |
+| User without project access | Partial (fallback state per project) | Restricted fallback state | Read-only | Never |
+
+PMO and executive users are Regular Users who have full dashboard access. A summary-only view for executives who should not see issue-level detail is deferred to post-MVP. FR-21 enforces that issue keys and summaries are only shown when the current user already has Jira permission to view those issues.
+
+### 2.4 Key User Journeys
 
 - **UJ-1. Maya scans the portfolio before weekly delivery review.**
   - **Persona + context:** Maya is an Engineering Manager responsible for 12 Jira projects.
@@ -96,6 +106,7 @@ Users can view one summary row per Selected Project with Project name, Project k
 - The dashboard shows a row for every Selected Project that the current user is allowed to access.
 - One failed project analysis does not prevent other project rows from rendering.
 - If a project cannot be fully analyzed, its row shows a Fallback State instead of disappearing silently.
+- A portfolio health summary header above the project table shows total project counts by Risk Level (HIGH / MEDIUM / LOW). This header reuses data already fetched for this FR; no additional API calls are needed. It gives PMO and executive users an at-a-glance RAG rollup and updates on every refresh.
 
 #### FR-2: Filter and sort portfolio risk
 
@@ -197,6 +208,30 @@ ProjectLens calculates blocked-issue risk, velocity-drop risk, scope-creep risk,
 **Consequences:**
 - Missing data never produces a runtime failure.
 - Missing data produces warnings, confidence reduction, or Fallback States.
+
+**Sub-risk normalization specification** (canonical; must be implemented as-is in `src/services/riskScoringService.ts`):
+
+**Blocked Risk (0–100)**
+- Input: count of active-sprint issues with blocked status older than configured threshold (default: 1 day)
+- 0 blocked → 0; 1–2 → 20–40 (linear); 3–5 → 40–70 (linear); 6+ → 70–100 (capped)
+- Modifier: +15 if any blocked issue is older than 3× the threshold (stale-blocker amplifier)
+- Missing data: returns 0 with `NO_ACTIVE_SPRINT` warning
+
+**Velocity Risk (0–100)**
+- Input: current sprint completed points vs. rolling average of last N completed sprints
+- Current ≥ average → 0; drop 1–20% → 10–30; drop 21–40% → 30–60; drop 41–60% → 60–80; drop >60% → 80–100
+- Fallback: use issue count if story points unavailable; mark confidence LOW
+- Missing data (< 3 sprints): returns 0 with `INSUFFICIENT_VELOCITY_HISTORY` warning
+
+**Scope Creep Risk (0–100)**
+- Input: issue count (or points) added to sprint after sprint start
+- 0% creep → 0; 1–10% added → 0–30; 11–25% added → 30–60; >25% added → 60–100
+- Missing sprint start date: returns 0 with `MISSING_SPRINT_START_DATE` warning
+
+**Unassigned Risk (0–100)**
+- Input: count of active-sprint issues with no assignee
+- 0 unassigned → 0; 1–2 → 15–30; 3–5 → 30–60; 6+ → 60–100
+- Post-MVP: weight by issue priority (high-priority unassigned = amplifier)
 
 #### FR-12: Calculate overall Risk Score
 

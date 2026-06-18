@@ -1,3 +1,43 @@
+## Open Questions (Pending Decision)
+
+### OQ-1: Dashboard Gadget Scope
+
+**Question:** Are `jira:dashboardGadget` modules in scope for MVP or deferred to Phase 2?
+
+**Context:** Gadgets allow PMO users to embed Portfolio Risk Summary and Top At-Risk Projects widgets directly on existing Jira dashboards without navigating to the global page. Each gadget requires its own manifest entry and Custom UI resource — additional frontend build complexity. All data would flow through the existing `getDashboardData` resolver with no new API paths.
+
+**Options:**
+- Defer to Phase 2 (recommended — keeps MVP scope clean; gadgets are read-only display surfaces that don't block core value)
+- Include in MVP — requires manifest and frontend changes before launch
+
+**Decision needed from:** Product Owner
+
+---
+
+### OQ-2: Executive-Only / Summary-Only View
+
+**Question:** Is a summary-only view (no issue-level detail) needed for executives who should not see project issue keys?
+
+**Context:** The current permission model has two roles: Jira Admin (configure) and Regular User (view). PMO governance may require read-only access for executives who should not see issue-level details. FR-21 already enforces that issue keys and summaries are only shown when the user has Jira permission — this OQ is about whether a separate UX mode is needed for users who technically *have* Jira access but should only see risk-level summaries.
+
+**Options:**
+- Defer post-MVP — current permission model handles the core case; a summary-only mode can be added in Phase 3
+- Add a "summary-only" toggle to user roles in MVP
+
+**Decision needed from:** Product Owner
+
+---
+
+### OQ-3: Sub-risk Normalization Sign-off
+
+**Question:** Are the sub-risk normalization breakpoints in PRD Section 4.3 (FR-11) approved as the canonical specification?
+
+**Context:** The normalization tables define exactly how each raw Jira signal (blocked count, velocity drop %, scope creep %, unassigned count) maps to a 0–100 sub-risk value. Without sign-off, different implementations will produce different scores for the same Jira state, making the score non-auditable. The breakpoints in FR-11 are proposed defaults; they can be made configurable in Phase 2 for per-organization tuning.
+
+**Decision needed from:** Product Owner / Lead Engineer
+
+---
+
 ## Product Decisions (Resolved)
 
 The following decisions are intentionally fixed for the MVP to eliminate ambiguity and enable autonomous implementation.
