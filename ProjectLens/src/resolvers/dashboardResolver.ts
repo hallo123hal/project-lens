@@ -1,31 +1,32 @@
 import type { ResolverResult } from '../types/app';
 import type { RiskProjectSummary } from '../types/risk';
+import { analyzePortfolio } from '../services/analysisService';
+import * as storageService from '../services/storageService';
+import { mergeWithDefaults } from '../services/settingsService';
 
 export interface DashboardData {
   projects: RiskProjectSummary[];
   lastRefreshed: string;
 }
 
-const MOCK_PROJECTS: RiskProjectSummary[] = [
-  {
-    projectKey: 'DEMO',
-    projectName: 'Demo Project',
-    riskScore: 72,
-    riskLevel: 'HIGH',
-    breakdown: { blockedRisk: 80, velocityRisk: 60, scopeCreepRisk: 50, unassignedRisk: 30 },
-    completionProbability: 42,
-    completionConfidence: 'HIGH',
-    sprintName: 'Sprint 5',
-    lastUpdated: new Date().toISOString(),
-    partial: false,
-  },
-];
-
 export async function getDashboardDataHandler(): Promise<ResolverResult<DashboardData>> {
+  const stored = await storageService.getSettings();
+  const settings = mergeWithDefaults(stored);
+
+  if (settings.selectedProjectKeys.length === 0) {
+    return {
+      data: { projects: [], lastRefreshed: new Date().toISOString() },
+      warnings: [{ code: 'BOARD_NOT_FOUND', message: 'No projects configured. Go to Settings to select projects.', severity: 'info' }],
+      errors: [],
+      partial: false,
+    };
+  }
+
+  const { projects, partial, warnings } = await analyzePortfolio(settings);
   return {
-    data: { projects: MOCK_PROJECTS, lastRefreshed: new Date().toISOString() },
-    warnings: [],
+    data: { projects, lastRefreshed: new Date().toISOString() },
+    warnings,
     errors: [],
-    partial: false,
+    partial,
   };
 }
