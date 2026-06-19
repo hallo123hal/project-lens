@@ -53,6 +53,15 @@ export default function SettingsPage({ onBack }: Props) {
       {settings && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 14 }}>
           <label>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Selected Project Keys (comma-separated)</div>
+            <input
+              value={settings.selectedProjectKeys.join(', ')}
+              onChange={e => update('selectedProjectKeys', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              style={{ width: '100%', padding: '6px 8px', boxSizing: 'border-box' }}
+              placeholder="PROJ1, PROJ2, PROJ3"
+            />
+          </label>
+          <label>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>Story Points Field ID</div>
             <input value={settings.storyPointsFieldId} onChange={e => update('storyPointsFieldId', e.target.value)}
               style={{ width: '100%', padding: '6px 8px', boxSizing: 'border-box' }} />

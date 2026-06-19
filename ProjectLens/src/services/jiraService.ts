@@ -12,6 +12,26 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 // ---------------------------------------------------------------------------
+// JQL search helper — uses /rest/api/3/search/jql with cursor pagination
+// ---------------------------------------------------------------------------
+async function searchIssuesByJql(jql: string, fields: string, pageSize = 50): Promise<JiraIssue[]> {
+  const results: JiraIssue[] = [];
+  let nextPageToken: string | undefined;
+
+  do {
+    const params = new URLSearchParams({ jql, fields, maxResults: String(pageSize) });
+    if (nextPageToken) params.set('nextPageToken', nextPageToken);
+    const body = await getJson<{ issues?: JiraIssue[]; nextPageToken?: string }>(
+      `/rest/api/3/search/jql?${params.toString()}`
+    );
+    results.push(...(body.issues ?? []));
+    nextPageToken = body.nextPageToken;
+  } while (nextPageToken);
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Boards
 // ---------------------------------------------------------------------------
 
@@ -43,15 +63,18 @@ export async function getActiveSprint(boardId: number): Promise<JiraSprint | nul
 }
 
 /**
- * Returns up to `limit` recently closed sprints for a board, newest last.
+ * Returns up to `limit` recently closed sprints for a board, sorted newest first.
  */
 export async function getClosedSprints(boardId: number, limit: number): Promise<JiraSprint[]> {
   const all = await fetchAllPages<JiraSprint>(
     `/rest/agile/1.0/board/${boardId}/sprint?state=closed`,
     (body) => ((body as unknown as JiraPaginatedResponse<JiraSprint>).values ?? []) as JiraSprint[],
-    limit
+    50
   );
-  return all.slice(0, limit);
+  const sorted = all
+    .filter(s => s.completeDate)
+    .sort((a, b) => new Date(b.completeDate!).getTime() - new Date(a.completeDate!).getTime());
+  return sorted.slice(0, limit);
 }
 
 // ---------------------------------------------------------------------------
@@ -71,14 +94,9 @@ export async function getSprintIssues(
     excludedTypes.length > 0
       ? ` AND issueType NOT IN (${excludedTypes.map(t => `"${t.replace(/"/g, '\\"')}"`).join(',')})`
       : '';
-  const jql = encodeURIComponent(`sprint = ${sprintId}${typeFilter}`);
+  const jql = `sprint = ${sprintId}${typeFilter}`;
   const fields = `summary,status,assignee,${storyPointsField}`;
-  const basePath = `/rest/api/3/search?jql=${jql}&fields=${fields}`;
-  return fetchAllPages<JiraIssue>(
-    basePath,
-    (body) => ((body as unknown as JiraPaginatedResponse<JiraIssue>).issues ?? []) as JiraIssue[],
-    100
-  );
+  return searchIssuesByJql(jql, fields, 100);
 }
 
 /**
@@ -90,13 +108,6 @@ export async function getProjectIssues(
   extraJql = '',
   fields = 'summary,status,assignee'
 ): Promise<JiraIssue[]> {
-  const jql = encodeURIComponent(
-    `project = ${projectKey}${extraJql ? ' AND ' + extraJql : ''}`
-  );
-  const basePath = `/rest/api/3/search?jql=${jql}&fields=${fields}`;
-  return fetchAllPages<JiraIssue>(
-    basePath,
-    (body) => ((body as unknown as JiraPaginatedResponse<JiraIssue>).issues ?? []) as JiraIssue[],
-    100
-  );
+  const jql = `project = ${projectKey}${extraJql ? ' AND ' + extraJql : ''}`;
+  return searchIssuesByJql(jql, fields, 100);
 }

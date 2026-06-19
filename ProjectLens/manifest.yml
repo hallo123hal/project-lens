@@ -20,3 +20,6 @@ app:
 permissions:
   scopes:
     - read:jira-work
+    - read:board-scope:jira-software
+    - read:sprint:jira-software
+    - read:issue-details:jira

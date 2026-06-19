@@ -50,12 +50,19 @@ export default function ProjectDetailPage({ projectKey, onBack }: Props) {
             <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 14 }}>
               <thead><tr style={{ borderBottom: '1px solid #DFE1E6' }}><th style={{ textAlign: 'left', padding: '6px 12px' }}>Signal</th><th style={{ padding: '6px 12px' }}>Score</th></tr></thead>
               <tbody>
-                {[['Blocked Issues', data.breakdown.blockedRisk],['Velocity Drop', data.breakdown.velocityRisk],['Scope Creep', data.breakdown.scopeCreepRisk],['Unassigned Work', data.breakdown.unassignedRisk]].map(([label, score]) => (
-                  <tr key={label as string} style={{ borderBottom: '1px solid #EBECF0' }}>
-                    <td style={{ padding: '6px 12px' }}>{label}</td>
-                    <td style={{ padding: '6px 12px' }}>{score}</td>
-                  </tr>
-                ))}
+                {[['Blocked Issues', data.breakdown.blockedRisk],['Velocity Drop', data.breakdown.velocityRisk],['Scope Creep', data.breakdown.scopeCreepRisk],['Unassigned Work', data.breakdown.unassignedRisk]].map(([label, score]) => {
+                  const isUnmeasured = label === 'Scope Creep' && (score as number) === 0;
+                  return (
+                    <tr key={label as string} style={{ borderBottom: '1px solid #EBECF0' }}>
+                      <td style={{ padding: '6px 12px' }}>{label}</td>
+                      <td style={{ padding: '6px 12px' }}>
+                        {isUnmeasured
+                          ? <span title="Not measured in this version" style={{ color: '#626F86' }}>—</span>
+                          : score}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </section>

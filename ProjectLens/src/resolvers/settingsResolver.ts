@@ -9,7 +9,9 @@ export async function getSettingsHandler(): Promise<ResolverResult<AppSettings>>
 }
 
 export async function saveSettingsHandler(payload: Partial<AppSettings>): Promise<ResolverResult<AppSettings>> {
-  const merged = mergeWithDefaults(payload);
+  const stored = await storageService.getSettings();
+  const current = mergeWithDefaults(stored);
+  const merged = { ...current, ...payload };
   const validationErrors = validateSettings(merged);
   if (validationErrors.length > 0) {
     return {
