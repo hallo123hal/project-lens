@@ -46,12 +46,12 @@ export async function getActiveSprint(boardId: number): Promise<JiraSprint | nul
  * Returns up to `limit` recently closed sprints for a board, newest last.
  */
 export async function getClosedSprints(boardId: number, limit: number): Promise<JiraSprint[]> {
-  const basePath = `/rest/agile/1.0/board/${boardId}/sprint?state=closed&maxResults=${limit}`;
-  return fetchAllPages<JiraSprint>(
-    basePath,
+  const all = await fetchAllPages<JiraSprint>(
+    `/rest/agile/1.0/board/${boardId}/sprint?state=closed`,
     (body) => ((body as unknown as JiraPaginatedResponse<JiraSprint>).values ?? []) as JiraSprint[],
     limit
   );
+  return all.slice(0, limit);
 }
 
 // ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ export async function getSprintIssues(
 ): Promise<JiraIssue[]> {
   const typeFilter =
     excludedTypes.length > 0
-      ? ` AND issueType NOT IN (${excludedTypes.map((t) => `"${t}"`).join(',')})`
+      ? ` AND issueType NOT IN (${excludedTypes.map(t => `"${t.replace(/"/g, '\\"')}"`).join(',')})`
       : '';
   const jql = encodeURIComponent(`sprint = ${sprintId}${typeFilter}`);
   const fields = `summary,status,assignee,${storyPointsField}`;
