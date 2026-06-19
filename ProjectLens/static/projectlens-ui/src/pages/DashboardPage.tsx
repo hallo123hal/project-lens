@@ -18,7 +18,7 @@ type Action =
 function reducer(state: DashboardState, action: Action): DashboardState {
   switch (action.type) {
     case 'FETCH_START': return { ...state, status: 'loading' };
-    case 'FETCH_SUCCESS': return { ...action.payload, status: 'loaded' };
+    case 'FETCH_SUCCESS': return { ...action.payload, status: 'loaded', sortField: state.sortField, sortDirection: state.sortDirection };
     case 'FETCH_ERROR': return { ...state, status: 'error', errors: [{ code: 'FETCH_FAILED', message: action.message }] };
     case 'SORT':
       return {
@@ -74,7 +74,7 @@ export default function DashboardPage({ onProjectClick, onSettingsClick }: Props
       <WarningList warnings={state.warnings} />
 
       {state.status === 'loading' && <LoadingState message="Analyzing portfolio…" />}
-      {state.status === 'error' && <EmptyState title="Failed to load dashboard" description={state.errors[0]?.message} />}
+      {state.status === 'error' && <EmptyState title="Failed to load dashboard" description={state.errors[0]?.message ?? 'An unexpected error occurred.'} />}
       {state.status === 'loaded' && projects.length === 0 && (
         <EmptyState title="No projects configured" description="Go to Settings to select projects for analysis." />
       )}
