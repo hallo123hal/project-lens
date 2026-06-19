@@ -1,14 +1,23 @@
 {
-  "name": "jira-global-page-custom-ui",
-  "version": "1.1.18",
-  "main": "index.js",
+  "name": "projectlens",
+  "version": "1.0.0",
+  "main": "src/index.ts",
   "license": "MIT",
   "private": true,
-  "devDependencies": {
-    "eslint": "^8.56.0",
-    "eslint-plugin-react-hooks": "^4.6.0"
+  "scripts": {
+    "test": "jest",
+    "build:ui": "cd static/projectlens-ui && npm run build",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@forge/resolver": "1.8.0"
+    "@forge/api": "^4.0.0",
+    "@forge/resolver": "^1.8.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/jest": "^29.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0"
   }
 }
