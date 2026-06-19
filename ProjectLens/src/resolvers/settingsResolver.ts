@@ -21,15 +21,3 @@ export async function saveSettingsHandler(payload: Partial<AppSettings>): Promis
   await storageService.saveSettings(merged);
   return { data: merged, warnings: [], errors: [], partial: false };
 }
-
-export async function getUserPreferencesHandler(accountId: string): Promise<ResolverResult<UserPreferences>> {
-  const stored = await storageService.getUserPreferences(accountId);
-  return { data: mergeUserPreferencesWithDefaults(stored), warnings: [], errors: [], partial: false };
-}
-
-export async function saveUserPreferencesHandler(accountId: string, payload: Partial<UserPreferences>): Promise<ResolverResult<UserPreferences>> {
-  const { mergeUserPreferencesWithDefaults: merge } = await import('../services/settingsService');
-  const merged = merge(payload);
-  await storageService.saveUserPreferences(accountId, merged);
-  return { data: merged, warnings: [], errors: [], partial: false };
-}
