@@ -1,3 +1,5 @@
+import type { AppError, AppWarning } from './app';
+
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 export type ConfidenceLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -29,7 +31,7 @@ export interface ProjectAnalysisResult {
   scopeCreepPercent: number;
   unassignedCount: number;
   recommendations: string[];
-  errors: import('./app').AppError[];
-  warnings: import('./app').AppWarning[];
+  errors: AppError[];
+  warnings: AppWarning[];
   partial: boolean;
 }
