@@ -29,8 +29,8 @@ export async function getSettings(): Promise<ResolverResult<unknown>> {
   return bridge.invoke('getSettings');
 }
 
-export async function saveSettings(settings: unknown): Promise<ResolverResult<unknown>> {
-  return bridge.invoke('saveSettings', settings as Record<string, unknown>);
+export async function saveSettings(settings: Record<string, unknown>): Promise<ResolverResult<unknown>> {
+  return bridge.invoke('saveSettings', settings);
 }
 
 export async function getUserPreferences(): Promise<ResolverResult<unknown>> {
