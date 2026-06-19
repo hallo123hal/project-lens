@@ -83,7 +83,7 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
     : sprintIssues.filter(i => i.fields.status.statusCategory.key !== 'done').length;
 
   const { probability: completionProbability, confidence: completionConfidence } =
-    velocityHistory.length > 0 ? calculateCompletionProbability(remainingPoints, velocityHistory) : { probability: null as unknown as number, confidence: 'LOW' as const };
+    velocityHistory.length > 0 ? calculateCompletionProbability(remainingPoints, velocityHistory) : { probability: null, confidence: 'LOW' as const };
 
   const avgDaysBlocked = blockedIssues.length > 0
     ? blockedIssues.reduce((s, i) => s + i.daysBlocked, 0) / blockedIssues.length
@@ -104,7 +104,7 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
     riskScore,
     riskLevel,
     breakdown,
-    completionProbability: typeof completionProbability === 'number' ? completionProbability : null,
+    completionProbability,
     completionConfidence,
     sprintName: activeSprint?.name ?? null,
     lastUpdated: new Date().toISOString(),
