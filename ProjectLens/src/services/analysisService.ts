@@ -17,7 +17,18 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
   const errors: AppError[] = [];
   let partial = false;
 
-  const boards = await jiraService.getProjectBoards(projectKey);
+  let boards: Awaited<ReturnType<typeof jiraService.getProjectBoards>>;
+  try {
+    boards = await jiraService.getProjectBoards(projectKey);
+  } catch {
+    warnings.push({
+      code: 'PROJECT_NOT_ACCESSIBLE',
+      message: `Could not access Jira for project "${projectKey}". Verify the project key is correct (uppercase letters/numbers only, e.g. "FORGE" — not a board name).`,
+      severity: 'warning',
+      projectKey,
+    });
+    return buildEmptyResult(projectKey, warnings, errors, true);
+  }
   if (boards.length === 0) {
     warnings.push({ code: 'BOARD_NOT_FOUND', message: `No board found for project ${projectKey}.`, severity: 'warning', projectKey });
     partial = true;
@@ -52,6 +63,19 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
 
   const unassignedCount = sprintIssues.filter(i => !i.fields.assignee).length;
   const totalIssueCount = sprintIssues.length;
+
+  const sprintStartDate = activeSprint?.startDate ? new Date(activeSprint.startDate) : null;
+  const addedIssues = sprintStartDate
+    ? sprintIssues.filter(i => {
+        const created = i.fields.created;
+        return typeof created === 'string' && new Date(created) > sprintStartDate;
+      }).length
+    : 0;
+  if (!sprintStartDate && totalIssueCount > 0) {
+    warnings.push({ code: 'SCOPE_CREEP_UNMEASURED', message: 'Sprint start date unavailable; scope creep not measured.', severity: 'info', projectKey });
+  }
+  const originalIssueCount = totalIssueCount - addedIssues;
+  const scopeCreepPercent = originalIssueCount > 0 ? (addedIssues / originalIssueCount) * 100 : 0;
 
   const closedSprints = await jiraService.getClosedSprints(board.id, settings.velocityLookbackSprints).catch(() => []);
   const velocityHistory: number[] = [];
@@ -92,7 +116,7 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
   const breakdown: RiskBreakdown = {
     blockedRisk: riskScoringService.calculateBlockedRisk(blockedIssues.length, totalIssueCount, avgDaysBlocked, settings.blockedAgeThresholdDays),
     velocityRisk: riskScoringService.calculateVelocityDropRisk(velocityHistory),
-    scopeCreepRisk: riskScoringService.calculateScopeCreepRisk(0, totalIssueCount, settings.scopeCreepThresholdPercent),
+    scopeCreepRisk: riskScoringService.calculateScopeCreepRisk(addedIssues, originalIssueCount, settings.scopeCreepThresholdPercent),
     unassignedRisk: riskScoringService.calculateUnassignedRisk(unassignedCount, totalIssueCount, settings.unassignedThresholdPercent),
   };
   const riskScore = riskScoringService.calculateRiskScore(breakdown);
@@ -116,7 +140,7 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
     breakdown,
     blockedIssues,
     velocityHistory,
-    scopeCreepPercent: 0,
+    scopeCreepPercent,
     unassignedCount,
     recommendations: generateRecommendations(breakdown, blockedIssues.map(i => i.key)),
     errors,

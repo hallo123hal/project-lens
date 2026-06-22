@@ -95,7 +95,7 @@ export async function getSprintIssues(
       ? ` AND issueType NOT IN (${excludedTypes.map(t => `"${t.replace(/"/g, '\\"')}"`).join(',')})`
       : '';
   const jql = `sprint = ${sprintId}${typeFilter}`;
-  const fields = `summary,status,assignee,${storyPointsField}`;
+  const fields = `summary,status,assignee,created,${storyPointsField}`;
   return searchIssuesByJql(jql, fields, 100);
 }
 

@@ -27,6 +27,7 @@ export interface JiraIssue {
     summary: string;
     status: { name: string; statusCategory: { key: string } };
     assignee: { accountId: string; displayName: string } | null;
+    created?: string;
     [storyPointsField: string]: unknown;
   };
 }

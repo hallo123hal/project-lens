@@ -14,7 +14,7 @@ export interface DashboardState {
 }
 
 export const initialDashboardState: DashboardState = {
-  status: 'idle',
+  status: 'loading',
   data: null,
   warnings: [],
   errors: [],

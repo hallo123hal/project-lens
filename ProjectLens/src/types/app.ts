@@ -7,7 +7,9 @@ export type WarningCode =
   | 'MULTIPLE_BOARDS_FOUND'
   | 'BOARD_NOT_ACCESSIBLE'
   | 'PARTIAL_DATA_DUE_TO_PERMISSIONS'
-  | 'PROJECT_ANALYSIS_FAILED';
+  | 'PROJECT_ANALYSIS_FAILED'
+  | 'PROJECT_NOT_ACCESSIBLE'
+  | 'SCOPE_CREEP_UNMEASURED';
 
 export interface AppWarning {
   code: WarningCode;

@@ -23,3 +23,4 @@ permissions:
     - read:board-scope:jira-software
     - read:sprint:jira-software
     - read:issue-details:jira
+    - storage:app
