@@ -51,8 +51,8 @@ function BreakdownCard({ label, score }: { label: string; score: number }) {
       <ScoreBadge score={score} large />
       <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
         <div
-          className={`h-full rounded-full ${barColor[level]}`}
-          style={{ width: `${score}%` }}
+          className={`h-full rounded-full ${barColor[level]} w-[var(--w)]`}
+          style={{ '--w': `${score}%` } as React.CSSProperties}
         />
       </div>
     </div>
@@ -158,7 +158,7 @@ export default function ProjectDetailPage({ projectKey, onBack }: Props) {
 
           {/* Recommendations */}
           {data.recommendations.length > 0 && (
-            <section className="bg-blue-50 rounded-lg p-5">
+            <section className="bg-blue-50 rounded-lg p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-3 m-0">Recommendations</h2>
               <div className="space-y-2">
                 {data.recommendations.map((r, i) => (
