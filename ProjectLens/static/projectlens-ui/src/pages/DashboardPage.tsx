@@ -45,9 +45,9 @@ function SortIcon({ field, activeField, dir }: { field: string; activeField: str
 }
 
 const rowBorder: Record<string, string> = {
-  HIGH:   'border-l-red-400',
-  MEDIUM: 'border-l-yellow-400',
-  LOW:    'border-l-green-400',
+  HIGH:   'border-l-[var(--risk-high-accent)]',
+  MEDIUM: 'border-l-[var(--risk-med-accent)]',
+  LOW:    'border-l-[var(--risk-low-accent)]',
 };
 
 interface Props { onProjectClick: (key: string) => void; onSettingsClick: () => void }

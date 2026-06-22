@@ -7,6 +7,9 @@
   --risk-med-text: #7F5F01;
   --risk-low-bg: #DFFCF0;
   --risk-low-text: #1F845A;
+  --risk-high-accent: #F87171;
+  --risk-med-accent:  #FBBF24;
+  --risk-low-accent:  #4ADE80;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   color: #172B4D;

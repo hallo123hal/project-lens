@@ -32,15 +32,15 @@ interface DetailData {
 }
 
 const topBorder: Record<string, string> = {
-  HIGH:   'border-t-red-400',
-  MEDIUM: 'border-t-yellow-400',
-  LOW:    'border-t-green-400',
+  HIGH:   'border-t-[var(--risk-high-accent)]',
+  MEDIUM: 'border-t-[var(--risk-med-accent)]',
+  LOW:    'border-t-[var(--risk-low-accent)]',
 };
 
 const barColor: Record<string, string> = {
-  low:    'bg-green-400',
-  medium: 'bg-yellow-400',
-  high:   'bg-red-400',
+  low:    'bg-[var(--risk-low-accent)]',
+  medium: 'bg-[var(--risk-med-accent)]',
+  high:   'bg-[var(--risk-high-accent)]',
 };
 
 function BreakdownCard({ label, score }: { label: string; score: number }) {
@@ -149,7 +149,7 @@ export default function ProjectDetailPage({ projectKey, onBack }: Props) {
                   <div key={i.key} className="flex items-center gap-3 text-sm">
                     <span className="font-mono text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded shrink-0">{i.key}</span>
                     <span className="text-gray-700 flex-1 min-w-0 truncate">{i.summary}</span>
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full shrink-0">{i.daysBlocked}d blocked</span>
+                    <span className="text-xs bg-[var(--risk-high-bg)] text-[var(--risk-high-text)] px-2 py-0.5 rounded-full shrink-0">{i.daysBlocked}d blocked</span>
                   </div>
                 ))}
               </div>

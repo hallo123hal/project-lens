@@ -63,8 +63,9 @@ export default function SettingsPage({ onBack }: Props) {
 
   function handleNumChange(field: string, raw: string, min: number, max: number, setter: (v: number) => void) {
     const num = Number(raw);
-    setter(num);
-    if (num < min || num > max) {
+    const clamped = Math.min(max, Math.max(min, num));
+    setter(clamped);
+    if (num !== clamped) {
       setNumErrors(prev => ({ ...prev, [field]: `Must be between ${min} and ${max}` }));
     } else {
       setNumErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
