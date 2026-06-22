@@ -40,6 +40,7 @@ export default function SettingsPage({ onBack }: Props) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [keysError, setKeysError] = useState<string | null>(null);
+  const [numErrors, setNumErrors] = useState<Record<string, string>>({});
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -60,6 +61,16 @@ export default function SettingsPage({ onBack }: Props) {
     setKeysError(validateProjectKeys(keys));
   }
 
+  function handleNumChange(field: string, raw: string, min: number, max: number, setter: (v: number) => void) {
+    const num = Number(raw);
+    setter(num);
+    if (num < min || num > max) {
+      setNumErrors(prev => ({ ...prev, [field]: `Must be between ${min} and ${max}` }));
+    } else {
+      setNumErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
+    }
+  }
+
   async function handleSave() {
     if (!settings) return;
     const err = validateProjectKeys(settings.selectedProjectKeys);
@@ -72,6 +83,7 @@ export default function SettingsPage({ onBack }: Props) {
       setStatus('loaded');
     } else {
       setStatus('saved');
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setStatus('loaded'), 3000);
     }
   }
@@ -89,7 +101,7 @@ export default function SettingsPage({ onBack }: Props) {
         onClick={onBack}
         className="text-blue-600 hover:underline bg-transparent border-none cursor-pointer p-0 text-sm mb-5 block"
       >
-        ← Back
+        ← Back to Dashboard
       </button>
       <h1 className="text-xl font-semibold text-gray-900 mt-0 mb-6">ProjectLens Settings</h1>
 
@@ -132,30 +144,33 @@ export default function SettingsPage({ onBack }: Props) {
             <FieldGroup
               label="Blocked Age Threshold (days)"
               helper='Issues blocked longer than this many days raise risk'
+              error={numErrors['blockedAgeThresholdDays']}
             >
               <input
-                type="number" min={0} value={settings.blockedAgeThresholdDays}
-                onChange={e => update('blockedAgeThresholdDays', Math.max(0, Number(e.target.value)))}
+                type="number" min={1} max={365} value={settings.blockedAgeThresholdDays}
+                onChange={e => handleNumChange('blockedAgeThresholdDays', e.target.value, 1, 365, v => update('blockedAgeThresholdDays', Math.min(365, Math.max(1, v))))}
                 className={numberInputClass}
               />
             </FieldGroup>
             <FieldGroup
               label="Scope Creep Threshold (%)"
               helper='Sprint scope increase above this % triggers a scope creep signal'
+              error={numErrors['scopeCreepThresholdPercent']}
             >
               <input
                 type="number" min={0} max={100} value={settings.scopeCreepThresholdPercent}
-                onChange={e => update('scopeCreepThresholdPercent', Math.min(100, Math.max(0, Number(e.target.value))))}
+                onChange={e => handleNumChange('scopeCreepThresholdPercent', e.target.value, 0, 100, v => update('scopeCreepThresholdPercent', Math.min(100, Math.max(0, v))))}
                 className={numberInputClass}
               />
             </FieldGroup>
             <FieldGroup
               label="Unassigned Threshold (%)"
               helper='% of sprint issues unassigned before risk is raised'
+              error={numErrors['unassignedThresholdPercent']}
             >
               <input
                 type="number" min={0} max={100} value={settings.unassignedThresholdPercent}
-                onChange={e => update('unassignedThresholdPercent', Math.min(100, Math.max(0, Number(e.target.value))))}
+                onChange={e => handleNumChange('unassignedThresholdPercent', e.target.value, 0, 100, v => update('unassignedThresholdPercent', Math.min(100, Math.max(0, v))))}
                 className={numberInputClass}
               />
             </FieldGroup>
@@ -177,10 +192,11 @@ export default function SettingsPage({ onBack }: Props) {
             <FieldGroup
               label="Velocity Lookback Sprints"
               helper='Number of past sprints used for Monte Carlo simulation (min 3 for HIGH confidence)'
+              error={numErrors['velocityLookbackSprints']}
             >
               <input
                 type="number" min={1} max={20} value={settings.velocityLookbackSprints}
-                onChange={e => update('velocityLookbackSprints', Math.min(20, Math.max(1, Number(e.target.value))))}
+                onChange={e => handleNumChange('velocityLookbackSprints', e.target.value, 1, 20, v => update('velocityLookbackSprints', Math.min(20, Math.max(1, v))))}
                 className={numberInputClass}
               />
             </FieldGroup>
