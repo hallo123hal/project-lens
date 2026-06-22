@@ -1,9 +1,9 @@
 import type { RiskLevel } from '../types/viewModels';
 
 const classes: Record<RiskLevel, string> = {
-  HIGH:   'bg-red-100 text-red-800',
-  MEDIUM: 'bg-yellow-100 text-yellow-800',
-  LOW:    'bg-green-100 text-green-800',
+  HIGH:   'bg-[var(--risk-high-bg)] text-[var(--risk-high-text)]',
+  MEDIUM: 'bg-[var(--risk-med-bg)] text-[var(--risk-med-text)]',
+  LOW:    'bg-[var(--risk-low-bg)] text-[var(--risk-low-text)]',
 };
 
 const icons: Record<RiskLevel, string> = {
