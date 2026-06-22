@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from 'react';
 import { getDashboardData } from '../api/forgeApi';
 import RiskBadge from '../components/RiskBadge';
+import ScoreBadge from '../components/ScoreBadge';
 import ProbabilityBadge from '../components/ProbabilityBadge';
 import LoadingState from '../components/LoadingState';
 import EmptyState from '../components/EmptyState';
@@ -17,9 +18,9 @@ type Action =
 
 function reducer(state: DashboardState, action: Action): DashboardState {
   switch (action.type) {
-    case 'FETCH_START': return { ...state, status: 'loading' };
+    case 'FETCH_START':   return { ...state, status: 'loading' };
     case 'FETCH_SUCCESS': return { ...action.payload, status: 'loaded', sortField: state.sortField, sortDirection: state.sortDirection };
-    case 'FETCH_ERROR': return { ...state, status: 'error', errors: [{ code: 'FETCH_FAILED', message: action.message }] };
+    case 'FETCH_ERROR':   return { ...state, status: 'error', errors: [{ code: 'FETCH_FAILED', message: action.message }] };
     case 'SORT':
       return {
         ...state,
@@ -38,6 +39,17 @@ function sortedProjects(projects: ProjectRow[], field: DashboardState['sortField
   });
 }
 
+function SortIcon({ field, activeField, dir }: { field: string; activeField: string; dir: 'asc' | 'desc' }) {
+  if (field !== activeField) return <span className="text-gray-300 ml-1 font-normal">↕</span>;
+  return <span className="text-blue-500 ml-1 font-normal">{dir === 'asc' ? '↑' : '↓'}</span>;
+}
+
+const rowBorder: Record<string, string> = {
+  HIGH:   'border-l-red-400',
+  MEDIUM: 'border-l-yellow-400',
+  LOW:    'border-l-green-400',
+};
+
 interface Props { onProjectClick: (key: string) => void; onSettingsClick: () => void }
 
 export default function DashboardPage({ onProjectClick, onSettingsClick }: Props) {
@@ -46,68 +58,89 @@ export default function DashboardPage({ onProjectClick, onSettingsClick }: Props
   useEffect(() => {
     dispatch({ type: 'FETCH_START' });
     getDashboardData()
-      .then(result => {
-        dispatch({
-          type: 'FETCH_SUCCESS',
-          payload: {
-            ...initialDashboardState,
-            data: result.data ?? null,
-            warnings: result.warnings,
-            errors: result.errors,
-            partial: result.partial,
-          },
-        });
-      })
+      .then(result => dispatch({
+        type: 'FETCH_SUCCESS',
+        payload: { ...initialDashboardState, data: result.data ?? null, warnings: result.warnings, errors: result.errors, partial: result.partial },
+      }))
       .catch(err => dispatch({ type: 'FETCH_ERROR', message: String(err) }));
   }, []);
 
-  const projects = state.data ? sortedProjects(state.data.projects, state.sortField, state.sortDirection) : [];
+  const projects = state.data
+    ? sortedProjects(state.data.projects, state.sortField, state.sortDirection)
+    : [];
 
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: 24, maxWidth: 1200 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 20 }}>Portfolio Risk Dashboard</h1>
-        <button onClick={onSettingsClick} style={{ padding: '6px 16px', cursor: 'pointer' }}>Settings</button>
+    <div className="p-6 max-w-6xl">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
+        <h1 className="m-0 text-xl font-semibold text-gray-900">Portfolio Risk Dashboard</h1>
+        <button
+          onClick={onSettingsClick}
+          className="px-4 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700 cursor-pointer bg-white"
+        >
+          Settings
+        </button>
       </div>
 
-      {state.partial && <WarningList warnings={[{ code: 'PARTIAL', message: 'Some projects could not be analyzed — partial data shown.', severity: 'warning' }]} />}
+      {state.partial && (
+        <WarningList warnings={[{ code: 'PARTIAL', message: 'Some projects could not be analyzed — partial data shown.', severity: 'warning' }]} />
+      )}
       <WarningList warnings={state.warnings} />
 
       {state.status === 'loading' && <LoadingState message="Analyzing portfolio…" />}
-      {state.status === 'error' && <EmptyState title="Failed to load dashboard" description={state.errors[0]?.message ?? 'An unexpected error occurred.'} />}
+      {state.status === 'error' && (
+        <EmptyState title="Failed to load dashboard" description={state.errors[0]?.message ?? 'An unexpected error occurred.'} />
+      )}
       {state.status === 'loaded' && projects.length === 0 && (
         <EmptyState title="No projects configured" description="Go to Settings to select projects for analysis." />
       )}
       {state.status === 'loaded' && projects.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr style={{ borderBottom: '2px solid #DFE1E6', textAlign: 'left' }}>
-              <th style={{ padding: '8px 12px', cursor: 'pointer' }} onClick={() => dispatch({ type: 'SORT', field: 'projectName' })}>Project</th>
-              <th style={{ padding: '8px 12px', cursor: 'pointer' }} onClick={() => dispatch({ type: 'SORT', field: 'riskScore' })}>Risk Score ↕</th>
-              <th style={{ padding: '8px 12px' }}>Blocked</th>
-              <th style={{ padding: '8px 12px' }}>Velocity Drop</th>
-              <th style={{ padding: '8px 12px' }}>Scope Creep</th>
-              <th style={{ padding: '8px 12px' }}>Unassigned</th>
-              <th style={{ padding: '8px 12px' }}>Sprint Completion</th>
-              <th style={{ padding: '8px 12px' }}>Sprint</th>
+            <tr className="border-b-2 border-gray-200 text-left">
+              <th
+                className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500 cursor-pointer hover:text-gray-800 select-none"
+                onClick={() => dispatch({ type: 'SORT', field: 'projectName' })}
+              >
+                Project <SortIcon field="projectName" activeField={state.sortField} dir={state.sortDirection} />
+              </th>
+              <th
+                className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500 cursor-pointer hover:text-gray-800 select-none"
+                onClick={() => dispatch({ type: 'SORT', field: 'riskScore' })}
+              >
+                Risk Score <SortIcon field="riskScore" activeField={state.sortField} dir={state.sortDirection} />
+              </th>
+              {['Blocked', 'Velocity Drop', 'Scope Creep', 'Unassigned'].map(h => (
+                <th key={h} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{h}</th>
+              ))}
+              <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Sprint Completion</th>
+              <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Sprint</th>
             </tr>
           </thead>
           <tbody>
             {projects.map(p => (
-              <tr key={p.projectKey} style={{ borderBottom: '1px solid #EBECF0' }}>
-                <td style={{ padding: '8px 12px' }}>
-                  <button onClick={() => onProjectClick(p.projectKey)} style={{ background: 'none', border: 'none', color: '#0052CC', cursor: 'pointer', padding: 0, fontSize: 14 }}>
+              <tr
+                key={p.projectKey}
+                className={`border-b border-gray-100 border-l-4 ${rowBorder[p.riskLevel]} hover:bg-gray-50 transition-colors`}
+              >
+                <td className="px-3 py-2.5">
+                  <button
+                    onClick={() => onProjectClick(p.projectKey)}
+                    className="text-blue-600 hover:underline bg-transparent border-none cursor-pointer p-0 text-sm font-medium"
+                  >
                     {p.projectName}
                   </button>
-                  {p.partial && <span style={{ color: '#626F86', fontSize: 11, marginLeft: 6 }}>(partial)</span>}
+                  {p.partial && <span className="text-gray-400 text-xs ml-1.5">(partial)</span>}
                 </td>
-                <td style={{ padding: '8px 12px' }}><RiskBadge level={p.riskLevel} score={p.riskScore} /></td>
-                <td style={{ padding: '8px 12px' }}>{p.breakdown.blockedRisk}</td>
-                <td style={{ padding: '8px 12px' }}>{p.breakdown.velocityRisk}</td>
-                <td style={{ padding: '8px 12px' }}>{p.breakdown.scopeCreepRisk}</td>
-                <td style={{ padding: '8px 12px' }}>{p.breakdown.unassignedRisk}</td>
-                <td style={{ padding: '8px 12px' }}><ProbabilityBadge probability={p.completionProbability} confidence={p.completionConfidence} /></td>
-                <td style={{ padding: '8px 12px', color: '#626F86' }}>{p.sprintName ?? '—'}</td>
+                <td className="px-3 py-2.5"><RiskBadge level={p.riskLevel} score={p.riskScore} /></td>
+                <td className="px-3 py-2.5"><ScoreBadge score={p.breakdown.blockedRisk} /></td>
+                <td className="px-3 py-2.5"><ScoreBadge score={p.breakdown.velocityRisk} /></td>
+                <td className="px-3 py-2.5"><ScoreBadge score={p.breakdown.scopeCreepRisk} /></td>
+                <td className="px-3 py-2.5"><ScoreBadge score={p.breakdown.unassignedRisk} /></td>
+                <td className="px-3 py-2.5">
+                  <ProbabilityBadge probability={p.completionProbability} confidence={p.completionConfidence} />
+                </td>
+                <td className="px-3 py-2.5 text-gray-400">{p.sprintName ?? '—'}</td>
               </tr>
             ))}
           </tbody>
