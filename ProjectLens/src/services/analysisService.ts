@@ -17,10 +17,19 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
   const errors: AppError[] = [];
   let partial = false;
 
-  let boards: Awaited<ReturnType<typeof jiraService.getProjectBoards>>;
+  // Fetch active sprint and its issues via JQL (no Agile board API needed)
+  let activeSprint: Awaited<ReturnType<typeof jiraService.getActiveSprintData>>['sprint'];
+  let sprintIssues: Awaited<ReturnType<typeof jiraService.getActiveSprintData>>['issues'];
   try {
-    boards = await jiraService.getProjectBoards(projectKey);
-  } catch {
+    const data = await jiraService.getActiveSprintData(
+      projectKey,
+      settings.storyPointsFieldId,
+      settings.excludedIssueTypes
+    );
+    activeSprint = data.sprint;
+    sprintIssues = data.issues;
+  } catch (e) {
+    console.error(`[ProjectLens] getActiveSprintData failed for "${projectKey}":`, e);
     warnings.push({
       code: 'PROJECT_NOT_ACCESSIBLE',
       message: `Could not access Jira for project "${projectKey}". Verify the project key is correct (uppercase letters/numbers only, e.g. "FORGE" — not a board name).`,
@@ -29,17 +38,7 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
     });
     return buildEmptyResult(projectKey, warnings, errors, true);
   }
-  if (boards.length === 0) {
-    warnings.push({ code: 'BOARD_NOT_FOUND', message: `No board found for project ${projectKey}.`, severity: 'warning', projectKey });
-    partial = true;
-    return buildEmptyResult(projectKey, warnings, errors, partial);
-  }
-  if (boards.length > 1) {
-    warnings.push({ code: 'MULTIPLE_BOARDS_FOUND', message: `Multiple boards found for ${projectKey}; using the first.`, severity: 'info', projectKey });
-  }
-  const board = boards[0];
 
-  const activeSprint = await jiraService.getActiveSprint(board.id).catch(() => null);
   if (!activeSprint) {
     warnings.push({ code: 'NO_ACTIVE_SPRINT', message: `No active sprint for ${projectKey}.`, severity: 'warning', projectKey });
     if (!settings.includeProjectsWithoutActiveSprint) {
@@ -47,10 +46,6 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
       return buildEmptyResult(projectKey, warnings, errors, partial);
     }
   }
-
-  const sprintIssues = activeSprint
-    ? await jiraService.getSprintIssues(activeSprint.id, settings.storyPointsFieldId, settings.excludedIssueTypes).catch(() => [])
-    : [];
 
   const today = new Date();
   const blockedIssues = sprintIssues
@@ -77,17 +72,23 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
   const originalIssueCount = totalIssueCount - addedIssues;
   const scopeCreepPercent = originalIssueCount > 0 ? (addedIssues / originalIssueCount) * 100 : 0;
 
-  const closedSprints = await jiraService.getClosedSprints(board.id, settings.velocityLookbackSprints).catch(() => []);
+  // Velocity from closed sprints — single JQL call replaces N board+sprint API calls
+  const closedSprintData = await jiraService.getClosedSprintVelocities(
+    projectKey,
+    settings.storyPointsFieldId,
+    settings.velocityLookbackSprints
+  ).catch(() => []);
+
   const velocityHistory: number[] = [];
-  for (const sprint of closedSprints.slice(-settings.velocityLookbackSprints)) {
-    const issues = await jiraService.getSprintIssues(sprint.id, settings.storyPointsFieldId, settings.excludedIssueTypes).catch(() => []);
-    const doneIssues = issues.filter(i => i.fields.status.statusCategory.key === 'done');
-    const hasPoints = doneIssues.some(i => getStoryPoints(i, settings.storyPointsFieldId) !== null);
+  for (const sprintData of closedSprintData) {
+    const hasPoints = sprintData.doneIssues.some(i => getStoryPoints(i, settings.storyPointsFieldId) !== null);
     if (hasPoints) {
-      const sprintVelocity = doneIssues.reduce((sum, i) => sum + (getStoryPoints(i, settings.storyPointsFieldId) ?? 0), 0);
+      const sprintVelocity = sprintData.doneIssues.reduce(
+        (sum, i) => sum + (getStoryPoints(i, settings.storyPointsFieldId) ?? 0), 0
+      );
       velocityHistory.push(sprintVelocity);
     } else if (settings.useIssueCountFallback) {
-      velocityHistory.push(doneIssues.length);
+      velocityHistory.push(sprintData.doneIssues.length);
       warnings.push({ code: 'USING_ISSUE_COUNT_FALLBACK', message: 'Story points not configured; using issue count for velocity.', severity: 'info', projectKey });
     }
   }
@@ -107,7 +108,9 @@ export async function analyzeProject(projectKey: string, settings: AppSettings):
     : sprintIssues.filter(i => i.fields.status.statusCategory.key !== 'done').length;
 
   const { probability: completionProbability, confidence: completionConfidence } =
-    velocityHistory.length > 0 ? calculateCompletionProbability(remainingPoints, velocityHistory) : { probability: null, confidence: 'LOW' as const };
+    velocityHistory.length > 0
+      ? calculateCompletionProbability(remainingPoints, velocityHistory)
+      : { probability: null, confidence: 'LOW' as const };
 
   const avgDaysBlocked = blockedIssues.length > 0
     ? blockedIssues.reduce((s, i) => s + i.daysBlocked, 0) / blockedIssues.length

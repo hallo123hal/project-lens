@@ -21,6 +21,8 @@ permissions:
   scopes:
     - read:jira-work
     - read:board-scope:jira-software
+    - read:board-scope.admin:jira-software
     - read:sprint:jira-software
     - read:issue-details:jira
+    - read:project:jira
     - storage:app
