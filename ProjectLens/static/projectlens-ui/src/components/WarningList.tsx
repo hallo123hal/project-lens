@@ -5,10 +5,13 @@ interface Props { warnings: WarningItem[] }
 export default function WarningList({ warnings }: Props) {
   if (warnings.length === 0) return null;
   return (
-    <ul style={{ padding: '8px 16px', background: '#FFF7D6', borderRadius: 4, margin: '8px 0', listStyle: 'none' }}>
+    <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-3 mb-3 space-y-1">
       {warnings.map((w) => (
-        <li key={w.code} style={{ fontSize: 12, color: '#7F5F01' }}>⚠ {w.message}</li>
+        <p key={w.code} className="text-sm text-amber-800 flex items-start gap-2 m-0">
+          <span className="shrink-0">⚠</span>
+          <span>{w.message}</span>
+        </p>
       ))}
-    </ul>
+    </div>
   );
 }
